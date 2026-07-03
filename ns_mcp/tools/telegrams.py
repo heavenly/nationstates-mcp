@@ -167,7 +167,7 @@ def register_tools(mcp) -> None:
             if telegram_id is not None:
                 # Fetch the telegram page (requires authentication via X-Pin)
                 page_url = (
-                    f"https://www.nationstates.net/page=tg/id={telegram_id}"
+                    f"https://www.nationstates.net/page=tg/tgid={telegram_id}"
                 )
                 auth_headers = client._auth.auth_headers()
                 response = await client.client.get(
@@ -196,12 +196,19 @@ def register_tools(mcp) -> None:
             # ---- List mode: get recent telegrams from notices ----------------
             raw = await client.api_get({"nation": nation, "q": "notices"})
             nation_data = raw.get("nation", raw)
-            notices = nation_data.get("notices", [])
+            notices_container = nation_data.get("notices", {})
 
-            # Filter for telegram-type notices only
+            # Handle the nested {"notice": [...]} structure
+            notices_raw = notices_container.get("notice", [])
+            if isinstance(notices_raw, dict):
+                notices_raw = [notices_raw]
+            if not isinstance(notices_raw, list):
+                notices_raw = []
+
+            # Filter for telegram-type notices only (NS uses "TG")
             telegrams: list[dict[str, Any]] = []
-            for notice in notices:
-                if isinstance(notice, dict) and notice.get("type") == "telegram":
+            for notice in notices_raw:
+                if isinstance(notice, dict) and notice.get("type") == "TG":
                     telegrams.append(notice)
 
             return {"telegrams": telegrams}
