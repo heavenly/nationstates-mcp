@@ -106,10 +106,11 @@ Add to `claude_desktop_config.json`:
 | `ns_gift_card` | Gift a card to another nation | Required |
 | `ns_junk_card` | Junk/destroy a card | Required |
 
-### Telegrams (1 tool)
+### Telegrams (2 tools)
 
 | Tool | Description | Auth |
 |------|-------------|------|
+| `ns_read_telegrams` | List recent telegrams or read full content by ID | Required |
 | `ns_send_telegram` | Send API telegram | Client Key |
 
 ### Verification (1 tool)
