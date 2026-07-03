@@ -74,7 +74,7 @@ Add to `claude_desktop_config.json`:
 | `ns_get_nation` | Fetch nation data by shard (public + private) | Optional |
 | `ns_get_nation_issues` | List pending issues | Required |
 | `ns_get_nation_issue` | Get issue detail with options | Required |
-| `ns_answer_issue` | Answer or dismiss an issue | Required |
+| `ns_answer_issue` | Answer or dismiss an issue (options are **0-indexed**!) | Required |
 | `ns_get_nation_notices` | Fetch unread notices | Required |
 
 ### Region API (1 tool)
@@ -117,6 +117,20 @@ Add to `claude_desktop_config.json`:
 | Tool | Description | Auth |
 |------|-------------|------|
 | `ns_verify` | Verify nation ownership | None |
+
+## ⚠️ Option IDs are 0-indexed
+
+When answering issues with `ns_answer_issue`, **option IDs start at 0**, not 1. So for an issue with 4 options:
+
+| Text order | `option_id` |
+|-----------|------------|
+| 1st option | `0` |
+| 2nd option | `1` |
+| 3rd option | `2` |
+| 4th option | `3` |
+| Dismiss | `-1` |
+
+This matches the `@id` attribute returned by `ns_get_nation_issue` and `ns_get_nation` (issues shard).  Passing an out-of-range ID like `4` for a 4-option issue will succeed silently but the issue won't be answered.
 
 ## Authentication
 

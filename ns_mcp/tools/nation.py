@@ -419,7 +419,11 @@ async def ns_answer_issue(
     autologin: str | None = None,
     pin: str | None = None,
 ) -> dict:
-    """Answer a pending issue. Use ``option_id=-1`` to dismiss.
+    """Answer a pending issue.
+
+    **Options are 0-indexed** — the first option is ``option_id=0``,
+    the second is ``option_id=1``, and so on.  Use ``option_id=-1`` to
+    dismiss the issue without selecting any option.
 
     Requires authentication.  This is a single-step command (no prepare /
     execute split).
@@ -427,7 +431,7 @@ async def ns_answer_issue(
     Args:
         nation: The nation name (case-insensitive).
         issue_id: The issue ID number.
-        option_id: The option ID to select (``-1`` to dismiss).
+        option_id: The option ID to select (0-indexed, ``-1`` to dismiss).
         password: Nation password (or set ``NS_PASSWORD`` env var).
         autologin: Autologin token (or set ``NS_AUTOLOGIN`` env var).
         pin: X-Pin session token (cached automatically).
