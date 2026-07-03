@@ -72,6 +72,13 @@ class AuthManager:
 
         return {}
 
+    def on_auth_failure(self) -> None:
+        """Clear the cached pin after a 403/409 so the next request
+        re-authenticates with raw credentials."""
+        self._pin = None
+        self._clear_cached_pin()
+        logger.warning("Auth failure — cleared cached X-Pin, will re-authenticate")
+
     def on_response(self, headers: dict[str, str]) -> None:
         """Inspect response headers for X-Pin and cache it.
 
@@ -79,18 +86,23 @@ class AuthManager:
         (which it does on first successful authenticated request), we
         capture and persist it for subsequent requests.
         """
-        pin = headers.get("X-Pin")
+        # Case-insensitive search — NS API may return x-pin, X-Pin, X-PIN, etc.
+        pin = None
+        for key, val in headers.items():
+            if key.lower() == "x-pin":
+                pin = val
+                break
         if pin and pin != self._pin:
             self._pin = pin
             self._persist_pin(pin)
-            logger.info("Captured X-Pin from response")
-
-    def on_auth_failure(self) -> None:
-        """Clear the cached pin after a 403/409 so the next request
-        re-authenticates with raw credentials."""
-        self._pin = None
-        self._clear_cached_pin()
-        logger.warning("Auth failure — cleared cached X-Pin, will re-authenticate")
+            logger.info("Captured X-Pin from response (pin=%s…)", pin[:8])
+        elif not self._pin:
+            # No pin cached yet and no pin in response — log for debugging
+            pin_keys = [k for k in headers if "pin" in k.lower()]
+            logger.debug(
+                "No X-Pin in response headers (keys with 'pin': %s, total keys: %d)",
+                pin_keys, len(headers),
+            )
 
     # ---- Disk cache ------------------------------------------------------------
 
