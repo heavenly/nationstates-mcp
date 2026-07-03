@@ -4,3 +4,4 @@ __pycache__/
 .pin_cache
 *.egg
 dist/
+.env
