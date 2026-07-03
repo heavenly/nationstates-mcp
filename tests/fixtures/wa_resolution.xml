@@ -1,0 +1,20 @@
+<WA council="1">
+  <RESOLUTION>
+    <NAME>Freedom of Speech Resolution</NAME>
+    <CATEGORY>Furtherment of Democracy</CATEGORY>
+    <OPTION>Strong</OPTION>
+    <PROPOSED_BY>example_nation</PROPOSED_BY>
+    <DESC>The World Assembly,
+
+RECOGNIZING that freedom of expression is a fundamental right...
+
+HEREBY:
+1. Declares that all member nations must...
+2. Establishes a committee to monitor...</DESC>
+    <TOTAL_NATIONS_FOR>12000</TOTAL_NATIONS_FOR>
+    <TOTAL_NATIONS_AGAINST>3000</TOTAL_NATIONS_AGAINST>
+    <IMPLEMENTED>Mon, 01 Jul 2026 12:00:00 GMT</IMPLEMENTED>
+  </RESOLUTION>
+  <NUMNATIONS>25000</NUMNATIONS>
+  <NUMDELEGATES>1500</NUMDELEGATES>
+</WA>

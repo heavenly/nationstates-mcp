@@ -1,0 +1,21 @@
+<OK>
+  <DESC>Your government has established the Testlandian Space Administration. Rocket scientists around the world are flocking to your nation.</DESC>
+  <RANKINGS>
+    <CIVILRIGHTS>+1.5</CIVILRIGHTS>
+    <ECONOMY>-0.3</ECONOMY>
+    <POLITICALFREEDOM>+0.2</POLITICALFREEDOM>
+  </RANKINGS>
+  <UNLOCKS>
+    <UNLOCK>Space Elevator Construction</UNLOCK>
+    <UNLOCK>Lunar Colony Planning</UNLOCK>
+  </UNLOCKS>
+  <RECLASSIFICATIONS>
+    <RECLASSIFICATION type="Civil Rights Lovefest" />
+  </RECLASSIFICATIONS>
+  <NEW_POLICIES>
+    <POLICY name="Space Program">Public</POLICY>
+  </NEW_POLICIES>
+  <REMOVED_POLICIES>
+    <POLICY name="Space Program">None</POLICY>
+  </REMOVED_POLICIES>
+</OK>

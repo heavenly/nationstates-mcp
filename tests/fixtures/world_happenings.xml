@@ -1,0 +1,12 @@
+<WORLD>
+  <HAPPENINGS>
+    <EVENT id="1001">
+      <TIMESTAMP>1720000000</TIMESTAMP>
+      <TEXT>@@testlandia@@ was admitted to the World Assembly.</TEXT>
+    </EVENT>
+    <EVENT id="1002">
+      <TIMESTAMP>1719990000</TIMESTAMP>
+      <TEXT>@@testlandia@@ voted FOR "Freedom of Speech Resolution".</TEXT>
+    </EVENT>
+  </HAPPENINGS>
+</WORLD>

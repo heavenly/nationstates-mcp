@@ -1,0 +1,2 @@
+[console_scripts]
+ns-mcp = ns_mcp.server:main

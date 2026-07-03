@@ -1,0 +1,22 @@
+<WORLD>
+  <CENSUS id="0">
+    <SCALE id="0">Civil Rights</SCALE>
+    <DESC>Civil rights is a measure of the degree to which citizens enjoy...</DESC>
+    <NAME>Civil Rights</NAME>
+    <TITLE>World Census: Civil Rights</TITLE>
+  </CENSUS>
+  <CENSUSRANKS id="0">
+    <RANK id="1">
+      <NATION>testlandia</NATION>
+      <SCORE>85.50</SCORE>
+    </RANK>
+    <RANK id="2">
+      <NATION>freedomville</NATION>
+      <SCORE>84.20</SCORE>
+    </RANK>
+  </CENSUSRANKS>
+  <NUMNATIONS>250000</NUMNATIONS>
+  <NUMREGIONS>15000</NUMREGIONS>
+  <FEATUREDREGION>The North Pacific</FEATUREDREGION>
+  <LASTEVENTID>987654321</LASTEVENTID>
+</WORLD>

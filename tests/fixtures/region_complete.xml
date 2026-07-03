@@ -1,0 +1,57 @@
+<REGION>
+  <NAME>The North Pacific</NAME>
+  <FACTBOOK>The North Pacific is one of the largest and most active regions...</FACTBOOK>
+  <NUMNATIONS>8000</NUMNATIONS>
+  <NATIONS>testlandia:anothernation:thirdnation:fourthnation:fifthnation</NATIONS>
+  <DELEGATE>ExampleDelegate</DELEGATE>
+  <DELEGATEAUTH>XWABCEP</DELEGATEAUTH>
+  <DELEGATEVOTES>150</DELEGATEVOTES>
+  <FOUNDER>Francos Spain</FOUNDER>
+  <FOUNDED>Antiquity</FOUNDED>
+  <FOUNDEDTIME>1041379200</FOUNDEDTIME>
+  <FLAG>https://www.nationstates.net/images/flags/uploads/region_flag.jpg</FLAG>
+  <POWER>Very High</POWER>
+  <DBID>1</DBID>
+  <FRONTIER>0</FRONTIER>
+  <MAGNETISM>100</MAGNETISM>
+  <GOVERNOR>ExampleGovernor</GOVERNOR>
+  <GOVERNORTITLE>Governor</GOVERNORTITLE>
+  <LASTUPDATE>1720000000</LASTUPDATE>
+  <LASTMAJORUPDATE>1719950000</LASTMAJORUPDATE>
+  <LASTMINORUPDATE>1719990000</LASTMINORUPDATE>
+  <TAGS>large,active,democratic</TAGS>
+  <EMBASSIES>regiona:regionb:regionc</EMBASSIES>
+  <RECRUITERS>1</RECRUITERS>
+  <EMBASSYRMB>all</EMBASSYRMB>
+  <GAVOTE>
+    <FOR>450</FOR>
+    <AGAINST>200</AGAINST>
+  </GAVOTE>
+  <SCVOTE>
+    <FOR>400</FOR>
+    <AGAINST>250</AGAINST>
+  </SCVOTE>
+  <OFFICERS>
+    <OFFICER nation="DelegateNation" office="WA Delegate" authority="XWABCEP" time="1720000000" by="FounderNation" order="1">WA Delegate</OFFICER>
+    <OFFICER nation="MinisterNation" office="Minister of Culture" authority="ACE" time="1710000000" by="DelegateNation" order="2">Minister of Culture</OFFICER>
+  </OFFICERS>
+  <MESSAGES>
+    <POST id="1001">
+      <TIMESTAMP>1720000000</TIMESTAMP>
+      <NATION>testlandia</NATION>
+      <STATUS>0</STATUS>
+      <LIKES>5</LIKES>
+      <MESSAGE>Hello from Testlandia! We're excited to join this region.</MESSAGE>
+    </POST>
+    <POST id="1002">
+      <TIMESTAMP>1719990000</TIMESTAMP>
+      <NATION>anothernation</NATION>
+      <STATUS>0</STATUS>
+      <LIKES>12</LIKES>
+      <MESSAGE>Welcome to The North Pacific!</MESSAGE>
+    </POST>
+  </MESSAGES>
+  <BANNER>r5</BANNER>
+  <BANNERBY>FounderNation</BANNERBY>
+  <BANNERURL>/images/banners/r5.jpg</BANNERURL>
+</REGION>

@@ -1,0 +1,17 @@
+<NATION id="testlandia">
+  <NOTICES>
+    <NOTICE>
+      <ID>1</ID>
+      <TITLE>Welcome to NationStates</TITLE>
+      <TIMESTAMP>1720000000</TIMESTAMP>
+      <TYPE>telegram</TYPE>
+    </NOTICE>
+    <NOTICE>
+      <ID>2</ID>
+      <TITLE>Your issue has been answered</TITLE>
+      <TIMESTAMP>1719990000</TIMESTAMP>
+      <TYPE>issue</TYPE>
+    </NOTICE>
+  </NOTICES>
+  <UNREAD>2</UNREAD>
+</NATION>

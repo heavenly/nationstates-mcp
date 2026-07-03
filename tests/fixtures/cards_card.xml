@@ -1,0 +1,37 @@
+<CARD>
+  <CARDID>12345</CARDID>
+  <SEASON>3</SEASON>
+  <NAME>Testlandia</NAME>
+  <CLASSIFICATION>Common</CLASSIFICATION>
+  <FLAG>https://www.nationstates.net/images/flags/uploads/testlandia__123456.jpg</FLAG>
+  <MOTTO>Peace and Progress</MOTTO>
+  <REGION>The North Pacific</REGION>
+  <GOVTDESC>Government by the people, for the people</GOVTDESC>
+  <DESC>A beautiful card depicting the nation of Testlandia.</DESC>
+  <MARKETS>
+    <ASK>
+      <NATION>seller_nation</NATION>
+      <PRICE>5.00</PRICE>
+      <TIMESTAMP>1720000000</TIMESTAMP>
+      <BID id="1">
+        <NATION>buyer_nation</NATION>
+        <PRICE>4.50</PRICE>
+        <TIMESTAMP>1719990000</TIMESTAMP>
+      </BID>
+    </ASK>
+  </MARKETS>
+  <OWNERS>
+    <OWNER>
+      <NATION>owner_nation</NATION>
+      <COUNT>3</COUNT>
+    </OWNER>
+  </OWNERS>
+  <TRADES>
+    <TRADE>
+      <BUYER>buyer_nation</BUYER>
+      <SELLER>seller_nation</SELLER>
+      <PRICE>4.75</PRICE>
+      <TIMESTAMP>1719980000</TIMESTAMP>
+    </TRADE>
+  </TRADES>
+</CARD>

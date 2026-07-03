@@ -1,0 +1,97 @@
+<NATION id="testlandia">
+  <FULLNAME>The Democratic Republic of Testlandia</FULLNAME>
+  <TYPE>Civil Rights Lovefest</TYPE>
+  <MOTTO>Peace and Progress</MOTTO>
+  <CATEGORY>Civil Rights Lovefest</CATEGORY>
+  <POPULATION>15.432</POPULATION>
+  <REGION>The North Pacific</REGION>
+  <FLAG>https://www.nationstates.net/images/flags/uploads/testlandia__123456.jpg</FLAG>
+  <CAPITAL>Test City</CAPITAL>
+  <LEADER>President Test</LEADER>
+  <CURRENCY>test dollar</CURRENCY>
+  <ANIMAL>test eagle</ANIMAL>
+  <RELIGION>none</RELIGION>
+  <DEMONYM>Testlandian</DEMONYM>
+  <DEMONYM2>Testlandians</DEMONYM2>
+  <DEMONYM2PLURAL>Testlandians</DEMONYM2PLURAL>
+  <GDP>420000000000</GDP>
+  <INCOME>35000</INCOME>
+  <TAX>25</TAX>
+  <CRIME>12.5</CRIME>
+  <INFLUENCE>Minnow</INFLUENCE>
+  <INFLUENCENUM>0.5</INFLUENCENUM>
+  <GOVT>Democratic Socialists</GOVT>
+  <GOVTDESC>Government by the people, for the people</GOVTDESC>
+  <GOVTPRIORITY>Healthcare</GOVTPRIORITY>
+  <INDUSTRYDESC>Information Technology and Cheese Exports</INDUSTRYDESC>
+  <MAJORINDUSTRY>Information Technology</MAJORINDUSTRY>
+  <SECTORS>
+    <SECTOR name="Agriculture">12.5</SECTOR>
+    <SECTOR name="Manufacturing">25.0</SECTOR>
+    <SECTOR name="Services">62.5</SECTOR>
+  </SECTORS>
+  <FREEDOM>
+    <CIVILRIGHTS>Excellent</CIVILRIGHTS>
+    <ECONOMY>Frightening</ECONOMY>
+    <POLITICALFREEDOM>Superb</POLITICALFREEDOM>
+  </FREEDOM>
+  <FOUNDED>2 years ago</FOUNDED>
+  <FOUNDEDTIME>1719900000</FOUNDEDTIME>
+  <FIRSTLOGIN>1719900000</FIRSTLOGIN>
+  <LASTLOGIN>1720000000</LASTLOGIN>
+  <LASTACTIVITY>1 day ago</LASTACTIVITY>
+  <DBID>123456</DBID>
+  <WA>Member</WA>
+  <WABADGES>5</WABADGES>
+  <NOTABLE>A notable achievement</NOTABLE>
+  <NOTABLES>
+    <NOTABLE>A notable achievement</NOTABLE>
+    <NOTABLE>Another achievement</NOTABLE>
+  </NOTABLES>
+  <ADMIRABLE>An admirable trait</ADMIRABLE>
+  <ADMIRABLES>
+    <ADMIRABLE>An admirable trait</ADMIRABLE>
+    <ADMIRABLE>Another admirable trait</ADMIRABLE>
+  </ADMIRABLES>
+  <SENSIBILITIES>environment,marijuana,capitalism</SENSIBILITIES>
+  <ANSWERED>42</ANSWERED>
+  <DEATHS>3</DEATHS>
+  <ENDORSEMENTS>nationa,nationb,nationc</ENDORSEMENTS>
+  <GAVOTE>FOR</GAVOTE>
+  <SCVOTE>AGAINST</SCVOTE>
+  <LEGISLATION>Widget Protection Act (recently enacted)</LEGISLATION>
+  <POLICIES>
+    <POLICY name="Marriage Equality">Legal</POLICY>
+    <POLICY name="Universal Healthcare">Yes</POLICY>
+  </POLICIES>
+  <BANNER>c10</BANNER>
+  <BANNERS>
+    <BANNER code="c10"/>
+    <BANNER code="p5"/>
+    <BANNER code="t3"/>
+  </BANNERS>
+  <DISPATCHES>5</DISPATCHES>
+  <DISPATCHLIST>
+    <DISPATCH id="1" title="Welcome to Testlandia"/>
+    <DISPATCH id="2" title="Economic Report"/>
+  </DISPATCHLIST>
+  <FACTBOOKS>2</FACTBOOKS>
+  <FACTBOOKLIST>
+    <FACTBOOK id="1" title="History"/>
+    <FACTBOOK id="2" title="Culture"/>
+  </FACTBOOKLIST>
+  <TGCANRECRUIT>1</TGCANRECRUIT>
+  <TGCANCAMPAIGN>1</TGCANCAMPAIGN>
+  <CUSTOMLEADER>President Custom</CUSTOMLEADER>
+  <CUSTOMCAPITAL>Custom City</CUSTOMCAPITAL>
+  <CUSTOMRELIGION>Custom Faith</CUSTOMRELIGION>
+  <PUBLICSECTOR>35.0</PUBLICSECTOR>
+  <POOREST>5.0</POOREST>
+  <RICHEST>15.0</RICHEST>
+  <CENSUS id="0">
+    <SCALE id="0">Civil Rights</SCALE>
+    <SCORE>85.5</SCORE>
+    <RANK>500</RANK>
+    <RRANK>50</RRANK>
+  </CENSUS>
+</NATION>

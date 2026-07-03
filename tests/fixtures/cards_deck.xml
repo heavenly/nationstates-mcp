@@ -1,0 +1,20 @@
+<CARDS>
+  <DECK>
+    <CARD>
+      <CARDID>100</CARDID>
+      <SEASON>3</SEASON>
+      <NAME>testlandia</NAME>
+      <CLASSIFICATION>Common</CLASSIFICATION>
+      <FLAG>https://www.nationstates.net/images/flags/uploads/testlandia__123456.jpg</FLAG>
+      <MARKET_VALUE>4.75</MARKET_VALUE>
+    </CARD>
+    <CARD>
+      <CARDID>200</CARDID>
+      <SEASON>3</SEASON>
+      <NAME>anothernation</NAME>
+      <CLASSIFICATION>Uncommon</CLASSIFICATION>
+      <FLAG>https://www.nationstates.net/images/flags/uploads/anothernation.jpg</FLAG>
+      <MARKET_VALUE>8.50</MARKET_VALUE>
+    </CARD>
+  </DECK>
+</CARDS>

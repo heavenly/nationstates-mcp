@@ -1,0 +1,9 @@
+<ISSUE id="12345">
+  <TITLE>Should We Legalize Recreational Space Travel?</TITLE>
+  <TEXT>In a surprising turn of events, private citizens have begun launching homemade rockets into orbit. The Ministry of Silly Walks reports that 47% of your citizens believe space tourism should be regulated, while 38% think it's none of the government's business and 15% are currently in low Earth orbit and unable to respond to surveys. Your advisors have presented the following options for your consideration.</TEXT>
+  <OPTION id="0">"Space is the final frontier," sighs your Minister of Exploration, clearly hoping you'll dismiss this issue. "Why don't we just let the free market sort it out and focus on more pressing terrestrial matters?"</OPTION>
+  <OPTION id="1">"We need a National Space Administration immediately!" declares your chief scientist, waving a blueprint for a space elevator. "Let's regulate launch windows, require safety certifications, and establish a public space program to ensure all Testlandians can reach the stars — not just the wealthy."</OPTION>
+  <OPTION id="2">"Tax it!" shouts your economic advisor, rubbing their hands together. "Commercial space launches should be taxed at 25%, and every orbit should require a permit. We'll call it the Orbital Revenue Enhancement (ORE) Act."</OPTION>
+  <OPTION id="3">"A lottery!" proposes your culture minister. "We'll raffle off free tickets to space! It's democratic, exciting, and will distract everyone from the pothole problem."</OPTION>
+  <DEADLINE>Mon, 17 Jul 2026 12:00:00 GMT</DEADLINE>
+</ISSUE>
