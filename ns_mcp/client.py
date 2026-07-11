@@ -17,6 +17,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+import os
 import xml.etree.ElementTree as ET
 from typing import Any
 
@@ -24,13 +25,14 @@ import httpx
 
 from .auth import AuthManager
 from .exceptions import NSAuthError, NSAPIError, NSCommandError, NSRateLimitError
-from .ratelimit import TelegramRateLimiter, get_shared_bucket
+from .ratelimit import get_shared_bucket, get_shared_telegram_limiter
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# XML parsing helper (temporary – Package B will provide specialised parsers)
+# Lossless generic XML parser. Category-specific normalizers live in
+# parsers.py, while the client keeps unknown/new shards intact here.
 # ---------------------------------------------------------------------------
 
 def _element_to_dict(element: ET.Element) -> Any:
@@ -117,7 +119,7 @@ class NationStatesClient:
         telegram_key: str | None = None,
     ) -> None:
         #: User-Agent string sent with every request (required by NS API).
-        self._user_agent = user_agent
+        self._user_agent = os.getenv("NS_USER_AGENT", user_agent)
 
         #: Auth manager – created from env vars if not provided.
         self._auth = auth_manager if auth_manager is not None else AuthManager()
@@ -129,7 +131,7 @@ class NationStatesClient:
         self._bucket = get_shared_bucket()
 
         #: Telegram-specific rate limiter.
-        self._telegram_limiter = TelegramRateLimiter()
+        self._telegram_limiter = get_shared_telegram_limiter()
 
         self._client: httpx.AsyncClient | None = None
 
@@ -170,7 +172,9 @@ class NationStatesClient:
 
     # ---- Core request funnel --------------------------------------------------
 
-    async def api_get(self, params: dict[str, str]) -> dict[str, Any]:
+    async def api_get(
+        self, params: dict[str, str], *, authenticated: bool = False,
+    ) -> dict[str, Any]:
         """Make an API call and return the parsed response.
 
         Handles:
@@ -198,7 +202,7 @@ class NationStatesClient:
         await self._bucket.acquire()
 
         # 2. Build request headers
-        headers = {**self._auth.auth_headers()}
+        headers = self._auth.auth_headers() if authenticated else {}
 
         logger.debug("API GET %s (headers: %s)", params, list(headers.keys()))
 
@@ -208,13 +212,14 @@ class NationStatesClient:
         )
 
         # 4. Always capture X-Pin (if present)
-        self._auth.on_response(dict(response.headers))
+        if authenticated:
+            self._auth.on_response(dict(response.headers))
 
         # 5. Observe rate-limit headers
         self._bucket.on_response(dict(response.headers))
 
         # 6. Handle 403 – clear pin, re-auth once with raw credentials, retry
-        if response.status_code == 403:
+        if response.status_code == 403 and authenticated:
             logger.warning("Got 403, clearing pin and retrying with raw credentials")
             self._auth.on_auth_failure()
             await self._bucket.acquire()
@@ -233,7 +238,11 @@ class NationStatesClient:
 
         # 7. Handle 429
         if response.status_code == 429:
-            retry_after_str = response.headers.get("X-Retry-After", "0")
+            retry_after_str = (
+                response.headers.get("X-Retry-After")
+                or response.headers.get("Retry-After")
+                or "0"
+            )
             try:
                 retry_after = float(retry_after_str)
             except ValueError:
@@ -265,8 +274,33 @@ class NationStatesClient:
                 recoverable=True,
             )
 
-        # 10. Parse XML → dict
-        return _parse_xml(response.text)
+        # 10. Some action endpoints return plain text rather than XML.
+        action = params.get("a", "").lower()
+        content = response.text.strip()
+        if action == "version" and not content.startswith("<"):
+            return {"version": content}
+        if action == "verify" and not content.startswith("<"):
+            return {"nation": {"verify": content}}
+        if action == "sendtg" and not content.startswith("<"):
+            return {"success": content}
+
+        # Parse XML → dict. NationStates may return an XML <ERROR>
+        # payload with HTTP 200, so classify that as an API failure too.
+        try:
+            parsed = _parse_xml(response.text)
+        except ET.ParseError as exc:
+            raise NSAPIError(
+                f"Invalid XML response: {exc}", status_code=response.status_code,
+                recoverable=True,
+            ) from exc
+        error_payload = parsed.get("error")
+        if error_payload is not None:
+            if isinstance(error_payload, dict):
+                detail = str(error_payload.get("#text") or error_payload)
+            else:
+                detail = str(error_payload)
+            raise NSAPIError(detail or "NationStates API returned an error", 200, False)
+        return parsed
 
     # ---- Category convenience methods -----------------------------------------
 
@@ -276,6 +310,7 @@ class NationStatesClient:
         shards: list[str] | None = None,
         census_scale: str | None = None,
         census_mode: str | None = None,
+        authenticated: bool = False,
     ) -> dict:
         """Fetch one or more nation shards.
 
@@ -298,7 +333,7 @@ class NationStatesClient:
             params["scale"] = census_scale
         if census_mode is not None:
             params["mode"] = census_mode
-        return await self.api_get(params)
+        return await self.api_get(params, authenticated=authenticated)
 
     async def get_region(
         self,
@@ -344,7 +379,7 @@ class NationStatesClient:
         Returns:
             Parsed response dict.
         """
-        params: dict[str, str] = {"world": "1", "q": "+".join(shards)}
+        params: dict[str, str] = {"q": "+".join(shards)}
         params.update(kwargs)
         return await self.api_get(params)
 
@@ -405,12 +440,15 @@ class NationStatesClient:
         base_params.update(params)
 
         if not two_step:
-            return await self.api_get(base_params)
+            return await self.api_get(base_params, authenticated=True)
 
         # -- Two-step: prepare --
         prepare_params = dict(base_params)
         prepare_params["mode"] = "prepare"
-        prepare_response = await self.api_get(prepare_params)
+        try:
+            prepare_response = await self.api_get(prepare_params, authenticated=True)
+        except NSAPIError as exc:
+            raise NSCommandError(exc.detail, exc.status_code, step="prepare") from exc
 
         # Extract token from the prepare response
         token = self._extract_token(prepare_response)
@@ -425,7 +463,10 @@ class NationStatesClient:
         execute_params = dict(base_params)
         execute_params["mode"] = "execute"
         execute_params["token"] = token
-        return await self.api_get(execute_params)
+        try:
+            return await self.api_get(execute_params, authenticated=True)
+        except NSAPIError as exc:
+            raise NSCommandError(exc.detail, exc.status_code, step="execute") from exc
 
     async def send_telegram(
         self,
@@ -433,6 +474,7 @@ class NationStatesClient:
         tgid: str,
         secret_key: str,
         to_nation: str,
+        is_recruitment: bool = False,
     ) -> dict:
         """Send an API telegram.
 
@@ -448,14 +490,14 @@ class NationStatesClient:
         Returns:
             Parsed response dict.
         """
-        await self._telegram_limiter.acquire(client_key, is_recruitment=False)
+        await self._telegram_limiter.acquire(client_key, is_recruitment=is_recruitment)
 
         params: dict[str, str] = {
-            "a": "telegram",
+            "a": "sendTG",
             "tgid": tgid,
             "key": secret_key,
             "to": to_nation,
-            "client_key": client_key,
+            "client": client_key,
         }
         return await self.api_get(params)
 
@@ -480,13 +522,13 @@ class NationStatesClient:
         """
         params: dict[str, str] = {
             "nation": nation,
-            "q": "verify",
+            "a": "verify",
             "checksum": checksum,
         }
         if token is not None:
             params["token"] = token
         if shards:
-            params["q"] = "verify+" + "+".join(shards)
+            params["q"] = "+".join(shards)
         return await self.api_get(params)
 
     async def get_cards(self, params: dict[str, str]) -> dict:
@@ -507,8 +549,8 @@ class NationStatesClient:
         Returns:
             The version string (e.g. ``"12"``).
         """
-        result = await self.api_get({"q": "version"})
-        return str(result.get("api", {}).get("version", ""))
+        result = await self.api_get({"a": "version"})
+        return str(result.get("version", ""))
 
     # ---- Internal helpers -----------------------------------------------------
 

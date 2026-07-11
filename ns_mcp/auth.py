@@ -31,6 +31,7 @@ class AuthManager:
         self,
         password: str | None = None,
         autologin: str | None = None,
+        pin: str | None = None,
         pin_cache_path: str = ".pin_cache",
     ) -> None:
         # Use explicit value; fall back to env var when None
@@ -41,13 +42,21 @@ class AuthManager:
             autologin if autologin is not None else os.getenv("NS_AUTOLOGIN")
         )
         self._pin_cache_path = Path(pin_cache_path)
-        self._pin: str | None = None
+        self._pin = pin
 
-        if not self._password and not self._autologin:
-            logger.warning(
+        if password and autologin:
+            logger.debug("Both password and autologin supplied; autologin takes precedence")
+
+        if not self._password and not self._autologin and not self._pin:
+            logger.debug(
                 "No credentials configured — X-Password/X-Autologin not set. "
                 "Set NS_PASSWORD or NS_AUTOLOGIN environment variables."
             )
+
+    @property
+    def has_credentials(self) -> bool:
+        """Whether this manager can authenticate a private request."""
+        return bool(self._pin or self._load_cached_pin() or self._password or self._autologin)
 
     # ---- Public API ------------------------------------------------------------
 

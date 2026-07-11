@@ -68,7 +68,7 @@ def register_tools(mcp) -> None:
                 "detail": "nation name is required",
             }
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.verify_nation(

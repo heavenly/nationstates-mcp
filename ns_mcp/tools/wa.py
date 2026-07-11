@@ -68,7 +68,7 @@ def register_tools(mcp) -> None:
                 ),
             }
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.get_wa(council=council, shards=shards)
@@ -125,7 +125,7 @@ def register_tools(mcp) -> None:
                 "detail": f"Council must be 1 (GA) or 2 (SC), got {council}",
             }
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.get_wa(

@@ -45,7 +45,7 @@ VALID_WORLD_SHARDS: frozenset[str] = frozenset({
     "tgqueue",
 })
 
-USER_AGENT = "ns-mcp/0.1.0"
+USER_AGENT = "ns-mcp/0.2.0"
 
 # ---------------------------------------------------------------------------
 # Validation helpers

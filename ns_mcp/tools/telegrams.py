@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
-from html.parser import HTMLParser
 from typing import Any
 
 from ns_mcp.auth import AuthManager
@@ -26,20 +24,16 @@ def _build_client(
     auth = AuthManager(
         password=password if password is not None else os.getenv("NS_PASSWORD"),
         autologin=autologin if autologin is not None else os.getenv("NS_AUTOLOGIN"),
+        pin=pin,
     )
-    if pin is not None:
-        object.__setattr__(auth, "_pin", pin)
-    return NationStatesClient(user_agent="ns-mcp/0.1.0", auth_manager=auth)
+    return NationStatesClient(user_agent="ns-mcp/0.2.0", auth_manager=auth)
 
 
-def _has_credentials(password: str | None, autologin: str | None) -> bool:
+def _has_credentials(
+    password: str | None, autologin: str | None, pin: str | None = None,
+) -> bool:
     """Return True if any credential source is available."""
-    return bool(
-        password
-        or autologin
-        or os.getenv("NS_PASSWORD")
-        or os.getenv("NS_AUTOLOGIN"),
-    )
+    return AuthManager(password=password, autologin=autologin, pin=pin).has_credentials
 
 
 def _error_response(error_type: str, detail: str, **extra: Any) -> dict[str, Any]:
@@ -47,67 +41,6 @@ def _error_response(error_type: str, detail: str, **extra: Any) -> dict[str, Any
     result: dict[str, Any] = {"error": error_type, "detail": detail}
     result.update(extra)
     return result
-
-
-# ---- Telegram page HTML parser ----------------------------------------------
-
-# The NS telegram page at /page=tg/id=N contains:
-#   <p class="tg-sender">From: <a ...>NationName</a></p>
-#   <div class="tg-content">Telegram body...</div>
-#   <p class="tg-subject">Subject line</p>
-#   <time>Timestamp</time>
-
-class _TelegramPageParser(HTMLParser):
-    """Extract telegram data from the NationStates telegram page."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.sender: str = ""
-        self.subject: str = ""
-        self.body: str = ""
-        self.timestamp: str = ""
-        self._in_message: bool = False
-        self._in_subject: bool = False
-        self._in_sender: bool = False
-        self._current_data: str = ""
-        self._body_parts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attrs_dict = dict(attrs)
-        cls = attrs_dict.get("class", "")
-
-        if tag == "div" and "ladder" in cls:
-            self._in_message = True
-        elif tag == "p" and cls == "reading-subject":
-            self._in_subject = True
-        elif tag == "p" and cls == "reading-head":
-            self._in_sender = True
-
-    def handle_endtag(self, tag: str) -> None:
-        if self._in_message and tag == "div":
-            self._in_message = False
-            self.body = "\n".join(self._body_parts).strip()
-        elif self._in_subject and tag == "p":
-            self._in_subject = False
-        elif self._in_sender and tag == "p":
-            self._in_sender = False
-
-    def handle_data(self, data: str) -> None:
-        text = data.strip()
-        if not text:
-            return
-        if self._in_subject:
-            self.subject = text
-        elif self._in_sender:
-            # Extract just the nation name from "From: NationName"
-            text = text.replace("From:", "").strip()
-            if text:
-                self.sender = text
-        elif self._in_message:
-            self._body_parts.append(data)
-
-    def error(self, message: str) -> None:
-        pass
 
 
 # ---------------------------------------------------------------------------
@@ -121,24 +54,18 @@ def register_tools(mcp) -> None:
     @mcp.tool()
     async def ns_read_telegrams(
         nation: str,
-        telegram_id: str | None = None,
         password: str | None = None,
         autologin: str | None = None,
         pin: str | None = None,
     ) -> dict:
         """Read telegrams for a nation. Requires authentication.
 
-        Without ``telegram_id``: returns a list of recent telegram metadata
-        (from the notices feed — subject, sender, timestamp, id).
-
-        With ``telegram_id``: fetches and returns the **full content** of a
-        specific telegram (sender, subject, body, timestamp).
+        Returns recent telegram metadata from the authenticated notices shard.
+        NationStates does not expose received telegram bodies through its API;
+        this tool intentionally does not scrape authenticated website pages.
 
         Args:
             nation: Your nation name.
-            telegram_id: Optional — a specific telegram/notice ID to read
-                in full.  Get IDs from the list returned when calling
-                without this parameter.
             password: Nation password (or set ``NS_PASSWORD`` env var).
             autologin: Autologin token (or set ``NS_AUTOLOGIN`` env var).
             pin: X-Pin session token (cached automatically).
@@ -147,11 +74,8 @@ def register_tools(mcp) -> None:
             {"telegrams": [{"id": 123, "subject": "...", "sender": "...",
               "timestamp": 1720000000, "type": "telegram"}, ...]}
 
-        Returns (single mode):
-            {"id": 123, "subject": "...", "sender": "...",
-             "body": "Full message text...", "timestamp": "..."}
         """
-        if not _has_credentials(password, autologin):
+        if not _has_credentials(password, autologin, pin):
             return _error_response(
                 "auth_required",
                 "Reading telegrams requires authentication. Provide "
@@ -163,38 +87,9 @@ def register_tools(mcp) -> None:
         try:
             await client.start()
 
-            # ---- Single telegram: scrape the page ----------------------------
-            if telegram_id is not None:
-                # Fetch the telegram page (requires authentication via X-Pin)
-                page_url = (
-                    f"https://www.nationstates.net/page=tg/tgid={telegram_id}"
-                )
-                auth_headers = client._auth.auth_headers()
-                response = await client.client.get(
-                    page_url, headers=auth_headers
-                )
-
-                if response.status_code != 200:
-                    return _error_response(
-                        "api_error",
-                        f"Failed to read telegram (HTTP {response.status_code})",
-                        status_code=response.status_code,
-                    )
-
-                # Parse the HTML to extract telegram content
-                parser_cte = _TelegramPageParser()
-                parser_cte.feed(response.text)
-
-                return {
-                    "id": telegram_id,
-                    "subject": parser_cte.subject,
-                    "sender": parser_cte.sender,
-                    "body": parser_cte.body,
-                    "timestamp": parser_cte.timestamp,
-                }
-
-            # ---- List mode: get recent telegrams from notices ----------------
-            raw = await client.api_get({"nation": nation, "q": "notices"})
+            raw = await client.api_get(
+                {"nation": nation, "q": "notices"}, authenticated=True,
+            )
             nation_data = raw.get("nation", raw)
             notices_container = nation_data.get("notices", {})
 
@@ -208,7 +103,8 @@ def register_tools(mcp) -> None:
             # Filter for telegram-type notices only (NS uses "TG")
             telegrams: list[dict[str, Any]] = []
             for notice in notices_raw:
-                if isinstance(notice, dict) and notice.get("type") == "TG":
+                notice_type = str(notice.get("type", "")).lower() if isinstance(notice, dict) else ""
+                if isinstance(notice, dict) and notice_type in {"tg", "telegram"}:
                     telegrams.append(notice)
 
             return {"telegrams": telegrams}
@@ -234,6 +130,7 @@ def register_tools(mcp) -> None:
         tgid: str,
         secret_key: str,
         to_nation: str,
+        is_recruitment: bool = False,
     ) -> dict:
         """Send an API telegram to a nation.
 
@@ -253,6 +150,7 @@ def register_tools(mcp) -> None:
                   composing via 'tag:api').
             secret_key: The template's Secret Key (never share this token).
             to_nation: Recipient nation name.
+            is_recruitment: Use the stricter 180-second recruitment limit.
 
         Returns:
             {"ok": True/False, "message": "Result description"}
@@ -281,7 +179,7 @@ def register_tools(mcp) -> None:
 
         # Telegram API uses a separate auth mechanism (API Client Key),
         # not the standard password/autologin/X-Pin system.
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.send_telegram(
@@ -289,6 +187,7 @@ def register_tools(mcp) -> None:
                 tgid=tgid.strip(),
                 secret_key=secret_key.strip(),
                 to_nation=to_nation.strip(),
+                is_recruitment=is_recruitment,
             )
             return {
                 "ok": True,

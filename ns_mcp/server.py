@@ -16,6 +16,9 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+from fastmcp import FastMCP
+
+from ns_mcp import __version__
 
 # Auto-load .env from the project root (walk up until found, or use cwd)
 _env_path = Path.cwd()
@@ -26,10 +29,6 @@ for _parent in [_env_path, *_env_path.parents]:
         break
 else:
     load_dotenv()  # fallback: load from cwd
-
-from fastmcp import FastMCP
-
-from ns_mcp import __version__
 
 # ---------------------------------------------------------------------------
 # MCP server instance
@@ -65,6 +64,7 @@ def _register_all_tools() -> None:
     from ns_mcp.tools.cards import register_tools as reg_cards
     from ns_mcp.tools.telegrams import register_tools as reg_telegrams
     from ns_mcp.tools.verification import register_tools as reg_verification
+    from ns_mcp.tools.utility import register_tools as reg_utility
 
     reg_nation(mcp)
     reg_region(mcp)
@@ -73,6 +73,7 @@ def _register_all_tools() -> None:
     reg_cards(mcp)
     reg_telegrams(mcp)
     reg_verification(mcp)
+    reg_utility(mcp)
 
 
 _register_all_tools()

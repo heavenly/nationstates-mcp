@@ -145,25 +145,20 @@ def _build_client(
     auth = AuthManager(
         password=password if password is not None else os.getenv("NS_PASSWORD"),
         autologin=autologin if autologin is not None else os.getenv("NS_AUTOLOGIN"),
+        pin=pin,
     )
-    if pin is not None:
-        # Bypass disk cache — set the pin directly on the auth manager.
-        object.__setattr__(auth, "_pin", pin)
 
     return NationStatesClient(
-        user_agent="ns-mcp/0.1.0",
+        user_agent="ns-mcp/0.2.0",
         auth_manager=auth,
     )
 
 
-def _has_credentials(password: str | None, autologin: str | None) -> bool:
+def _has_credentials(
+    password: str | None, autologin: str | None, pin: str | None = None,
+) -> bool:
     """Return ``True`` if any credential source is available."""
-    return bool(
-        password
-        or autologin
-        or os.getenv("NS_PASSWORD")
-        or os.getenv("NS_AUTOLOGIN"),
-    )
+    return AuthManager(password=password, autologin=autologin, pin=pin).has_credentials
 
 
 def _error_response(error_type: str, detail: str, **extra: Any) -> dict[str, Any]:
@@ -217,7 +212,7 @@ async def ns_get_nation(
 
     # -- Auth check (private shards need credentials) --------------------------
     needs_auth = bool(set(shards) & PRIVATE_SHARDS)
-    if needs_auth and not _has_credentials(password, autologin):
+    if needs_auth and not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "One or more requested shards require authentication "
@@ -235,6 +230,7 @@ async def ns_get_nation(
             shards=shards,
             census_scale=census_scale,
             census_mode=census_mode,
+            authenticated=needs_auth,
         )
         # Unwrap the ``{"nation": {...}}`` wrapper for a cleaner response.
         return raw.get("nation", raw)
@@ -273,7 +269,7 @@ async def ns_get_nation_issues(
     Returns:
         ``{"issues": [{"id": 123, "title": "..."}, ...]}``
     """
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "Fetching issues requires authentication. Provide ``password`` "
@@ -285,7 +281,9 @@ async def ns_get_nation_issues(
 
     try:
         await client.start()
-        raw = await client.api_get({"nation": nation, "c": "issues"})
+        raw = await client.api_get(
+            {"nation": nation, "c": "issues"}, authenticated=True,
+        )
 
         # Parse the issues list from the XML -> dict response.
         issues_container = raw.get("issues", {})
@@ -351,7 +349,7 @@ async def ns_get_nation_issue(
             {"issue_id": 123, "title": "...", "text": "...",
              "options": [{"id": 0, "text": "..."}, ...], "deadline": "..."}
     """
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "Fetching an issue requires authentication. Provide ``password`` "
@@ -366,8 +364,8 @@ async def ns_get_nation_issue(
         raw = await client.api_get({
             "nation": nation,
             "c": "issue",
-            "id": str(issue_id),
-        })
+            "issueid": str(issue_id),
+        }, authenticated=True)
 
         issue = raw.get("issue", {})
 
@@ -379,7 +377,7 @@ async def ns_get_nation_issue(
         options: list[dict[str, Any]] = []
         for opt in options_raw:
             oid = opt.get("@id", "")
-            otext = opt.get("text", "")
+            otext = opt.get("#text") or opt.get("text", "")
             try:
                 options.append({"id": int(oid), "text": otext})
             except (ValueError, TypeError):
@@ -443,7 +441,7 @@ async def ns_answer_issue(
              "unlocks": [...], "reclassifications": [...],
              "new_policies": {...}, "removed_policies": {...}}
     """
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "Answering an issue requires authentication. Provide "
@@ -463,6 +461,21 @@ async def ns_answer_issue(
         )
 
         issue = raw.get("issue", raw)
+
+        # Successful issue commands return <OK>, not <ISSUE>. Preserve all
+        # result fields while presenting stable, snake_case output names.
+        if "ok" in raw:
+            ok = raw["ok"]
+            return {
+                "ok": True,
+                "description": ok.get("desc", "") if isinstance(ok, dict) else str(ok),
+                "rankings": ok.get("rankings", {}) if isinstance(ok, dict) else {},
+                "unlocks": ok.get("unlocks", {}) if isinstance(ok, dict) else {},
+                "reclassifications": ok.get("reclassifications", {}) if isinstance(ok, dict) else {},
+                "new_policies": ok.get("new_policies", {}) if isinstance(ok, dict) else {},
+                "removed_policies": ok.get("removed_policies", {}) if isinstance(ok, dict) else {},
+                "response": raw,
+            }
 
         # Parse census-score rankings
         rankings_raw = issue.get("ranking", {})
@@ -543,7 +556,7 @@ async def ns_get_nation_notices(
 
             {"notices": {"notice": [...]}, ...}
     """
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "Fetching notices requires authentication. Provide ``password`` "
@@ -559,7 +572,7 @@ async def ns_get_nation_notices(
         if from_timestamp is not None:
             params["from"] = from_timestamp
 
-        raw = await client.api_get(params)
+        raw = await client.api_get(params, authenticated=True)
         # Unwrap the ``{"nation": {...}}`` wrapper.
         return raw.get("nation", raw)
     except NSAuthError as e:
@@ -620,7 +633,7 @@ async def ns_manage_dispatch(
             "missing_dispatch_id",
             f"dispatch_id is required for action '{action}'",
         )
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "Dispatch management requires authentication. Provide "
@@ -682,7 +695,7 @@ async def ns_post_rmb(
     Returns:
         ``{"ok": True/False, "description": "..."}``
     """
-    if not _has_credentials(password, autologin):
+    if not _has_credentials(password, autologin, pin):
         return _error_response(
             "auth_required",
             "RMB posting requires authentication. Provide ``password`` "

@@ -1,6 +1,5 @@
 """Region API tools for the NationStates MCP server."""
 
-import os
 from ns_mcp.client import NationStatesClient
 from ns_mcp.exceptions import NSAuthError, NSAPIError, NSRateLimitError
 
@@ -68,7 +67,7 @@ def register_tools(mcp) -> None:
         if "messages" in shards and msg_limit is None:
             msg_limit = _DEFAULT_MESSAGES_LIMIT
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.get_region(

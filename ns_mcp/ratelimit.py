@@ -48,32 +48,8 @@ class TokenBucket:
         backoff (from ``X-Retry-After`` / ``Retry-After`` headers observed
         by :meth:`on_response`).
         """
-        async with self._lock:
-            # If server told us to wait, honour that first
-            if self._server_retry_after > 0:
-                wait = self._server_retry_after
-                logger.info("Server backoff: waiting %.1fs", wait)
-                self._server_retry_after = 0.0
-                self._lock.release()  # don't hold lock while sleeping
-                await asyncio.sleep(wait)
-                await self._lock.acquire()
-
-            # Refill tokens based on elapsed time
-            now = time.monotonic()
-            elapsed = now - self._last_refill
-            self._tokens = min(
-                self.rate, self._tokens + elapsed * (self.rate / self.period)
-            )
-            self._last_refill = now
-
-            if self._tokens < 1.0:
-                # Need to wait for a token
-                wait_time = (1.0 - self._tokens) * (self.period / self.rate)
-                logger.debug("Rate limit: waiting %.2fs for token", wait_time)
-                self._lock.release()
-                await asyncio.sleep(wait_time)
-                await self._lock.acquire()
-                # Re-calculate after the sleep
+        while True:
+            async with self._lock:
                 now = time.monotonic()
                 elapsed = now - self._last_refill
                 self._tokens = min(
@@ -81,7 +57,17 @@ class TokenBucket:
                 )
                 self._last_refill = now
 
-            self._tokens -= 1.0
+                if self._server_retry_after > 0:
+                    wait_time = self._server_retry_after
+                    self._server_retry_after = 0.0
+                elif self._tokens >= 1.0:
+                    self._tokens -= 1.0
+                    return
+                else:
+                    wait_time = (1.0 - self._tokens) * (self.period / self.rate)
+
+            logger.debug("Rate limit: waiting %.2fs", wait_time)
+            await asyncio.sleep(wait_time)
 
     def on_response(self, headers: dict[str, str]) -> None:
         """Inspect response headers for server-side rate-limit directives.
@@ -89,7 +75,10 @@ class TokenBucket:
         If ``X-Retry-After`` or ``Retry-After`` is present, store a backoff
         that will be honoured by the next :meth:`acquire` call.
         """
-        retry_after = headers.get("X-Retry-After") or headers.get("Retry-After")
+        normalized = {key.lower(): value for key, value in headers.items()}
+        retry_after = normalized.get("x-retry-after") or normalized.get("retry-after")
+        reset = normalized.get("ratelimit-reset")
+        remaining = normalized.get("ratelimit-remaining")
         if retry_after:
             try:
                 self._server_retry_after = float(retry_after)
@@ -99,6 +88,11 @@ class TokenBucket:
                 )
             except ValueError:
                 logger.warning("Unparseable X-Retry-After: %s", retry_after)
+        elif remaining == "0" and reset:
+            try:
+                self._server_retry_after = max(self._server_retry_after, float(reset))
+            except ValueError:
+                logger.warning("Unparseable RateLimit-Reset: %s", reset)
 
     @property
     def available_tokens(self) -> float:
@@ -108,6 +102,7 @@ class TokenBucket:
 # ---- Shared singleton ---------------------------------------------------------
 
 _shared_bucket: TokenBucket | None = None
+_shared_telegram_limiter: TelegramRateLimiter | None = None
 
 
 def get_shared_bucket() -> TokenBucket:
@@ -189,3 +184,11 @@ class TelegramRateLimiter:
         """
         # Reserved for future use
         _ = headers
+
+
+def get_shared_telegram_limiter() -> TelegramRateLimiter:
+    """Return the process-wide telegram limiter shared by all tool calls."""
+    global _shared_telegram_limiter
+    if _shared_telegram_limiter is None:
+        _shared_telegram_limiter = TelegramRateLimiter()
+    return _shared_telegram_limiter

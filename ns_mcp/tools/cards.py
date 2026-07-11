@@ -15,23 +15,40 @@ VALID_DECK_QUERIES = {"deck", "info", "asksbids", "collections"}
 def _build_client(
     password: str | None = None,
     autologin: str | None = None,
+    pin: str | None = None,
 ) -> NationStatesClient:
     """Create an authenticated NationStatesClient for private commands."""
     auth = AuthManager(
         password=password or os.getenv("NS_PASSWORD"),
         autologin=autologin or os.getenv("NS_AUTOLOGIN"),
+        pin=pin,
     )
-    return NationStatesClient(user_agent="ns-mcp/0.1.0", auth_manager=auth)
+    return NationStatesClient(user_agent="ns-mcp/0.2.0", auth_manager=auth)
 
 
 def register_tools(mcp) -> None:
     """Register all trading-cards-related tools with the MCP server."""
+
+    async def _public_cards_request(params: dict[str, str]) -> dict:
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
+        try:
+            await client.start()
+            return await client.get_cards(params)
+        except NSAPIError as exc:
+            return {"error": "api_error", "detail": str(exc), "status_code": exc.status_code}
+        except NSRateLimitError as exc:
+            return {"error": "rate_limited", "detail": str(exc), "retry_after": exc.retry_after}
+        finally:
+            await client.close()
 
     @mcp.tool()
     async def ns_get_card(
         card_id: int,
         season: int,
         shards: list[str],
+        trades_limit: int | None = None,
+        trades_since_time: int | None = None,
+        trades_before_time: int | None = None,
     ) -> dict:
         """Fetch trading card data by card ID and season.
 
@@ -54,10 +71,10 @@ def register_tools(mcp) -> None:
                 }
             }}
         """
-        if season not in (1, 2, 3):
+        if season < 1:
             return {
                 "error": "invalid_season",
-                "detail": f"Season must be 1, 2, or 3, got {season}",
+                "detail": f"Season must be a positive integer, got {season}",
             }
 
         invalid = [s for s in shards if s not in VALID_CARD_SHARDS]
@@ -68,14 +85,23 @@ def register_tools(mcp) -> None:
                 "valid_shards": sorted(VALID_CARD_SHARDS),
             }
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
-            result = await client.get_cards({
+            params = {
                 "q": "card+" + "+".join(shards),
                 "cardid": str(card_id),
                 "season": str(season),
-            })
+            }
+            if trades_limit is not None:
+                params["limit"] = str(trades_limit)
+            if trades_since_time is not None and trades_before_time is not None:
+                return {"error": "invalid_range", "detail": "Use only one of trades_since_time or trades_before_time"}
+            if trades_since_time is not None:
+                params["sincetime"] = str(trades_since_time)
+            if trades_before_time is not None:
+                params["beforetime"] = str(trades_before_time)
+            result = await client.get_cards(params)
             return result
         except NSAPIError as e:
             return {
@@ -135,7 +161,7 @@ def register_tools(mcp) -> None:
                 "valid_queries": sorted(VALID_DECK_QUERIES),
             }
 
-        client = NationStatesClient(user_agent="ns-mcp/0.1.0")
+        client = NationStatesClient(user_agent="ns-mcp/0.2.0")
         try:
             await client.start()
             result = await client.get_cards({
@@ -169,6 +195,36 @@ def register_tools(mcp) -> None:
             await client.close()
 
     @mcp.tool()
+    async def ns_get_cards_collection(collection_id: int) -> dict:
+        """Fetch one public trading-card collection by numeric ID."""
+        return await _public_cards_request({
+            "q": "cards+collection", "collectionid": str(collection_id),
+        })
+
+    @mcp.tool()
+    async def ns_get_cards_auctions() -> dict:
+        """Fetch current global trading-card auctions."""
+        return await _public_cards_request({"q": "cards+auctions"})
+
+    @mcp.tool()
+    async def ns_get_cards_trades(
+        limit: int | None = None,
+        since_time: int | None = None,
+        before_time: int | None = None,
+    ) -> dict:
+        """Fetch global card trades, optionally bounded by time."""
+        if since_time is not None and before_time is not None:
+            return {"error": "invalid_range", "detail": "Use only one of since_time or before_time"}
+        params = {"q": "cards+trades"}
+        if limit is not None:
+            params["limit"] = str(limit)
+        if since_time is not None:
+            params["sincetime"] = str(since_time)
+        if before_time is not None:
+            params["beforetime"] = str(before_time)
+        return await _public_cards_request(params)
+
+    @mcp.tool()
     async def ns_gift_card(
         nation: str,
         card_id: int,
@@ -196,13 +252,13 @@ def register_tools(mcp) -> None:
         Returns:
             {"ok": True/False, "description": "Success/failure message"}
         """
-        if season not in (1, 2, 3):
+        if season < 1:
             return {
                 "error": "invalid_season",
-                "detail": f"Season must be 1, 2, or 3, got {season}",
+                "detail": f"Season must be a positive integer, got {season}",
             }
 
-        client = _build_client(password=password, autologin=autologin)
+        client = _build_client(password=password, autologin=autologin, pin=pin)
         try:
             await client.start()
             result = await client.execute_command(
@@ -278,13 +334,13 @@ def register_tools(mcp) -> None:
         Returns:
             {"ok": True/False, "description": "Success/failure message"}
         """
-        if season not in (1, 2, 3):
+        if season < 1:
             return {
                 "error": "invalid_season",
-                "detail": f"Season must be 1, 2, or 3, got {season}",
+                "detail": f"Season must be a positive integer, got {season}",
             }
 
-        client = _build_client(password=password, autologin=autologin)
+        client = _build_client(password=password, autologin=autologin, pin=pin)
         try:
             await client.start()
             result = await client.execute_command(
